@@ -1,0 +1,22 @@
+.grid-size-controls {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.size-control input {
+  width: 60px;
+  padding: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.size-control label {
+  font-weight: 500;
+}

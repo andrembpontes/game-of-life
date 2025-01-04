@@ -1,15 +1,20 @@
 import '../styles/GameControls.css';
 
-const GameControls = ({ isRunning, onStart, onStop, onClear, onRandom }) => {
+const GameControls = ({ isRunning, isMuted, onToggleRunning, onReset, onClear, onToggleMute }) => {
   return (
     <div className="game-controls">
-      {!isRunning ? (
-        <button onClick={onStart}>Start</button>
-      ) : (
-        <button onClick={onStop}>Stop</button>
-      )}
-      <button onClick={onClear}>Clear</button>
-      <button onClick={onRandom}>Random</button>
+      <button onClick={onToggleRunning}>
+        {isRunning ? 'Stop' : 'Start'}
+      </button>
+      <button onClick={onReset}>
+        Random
+      </button>
+      <button onClick={onClear}>
+        Clear
+      </button>
+      <button onClick={onToggleMute} className={isMuted ? 'muted' : ''}>
+        {isMuted ? '🔇' : '🔊'}
+      </button>
     </div>
   );
 };

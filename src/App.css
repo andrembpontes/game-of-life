@@ -1,5 +1,5 @@
 .app {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
@@ -8,10 +8,10 @@
   align-items: center;
 }
 
-h1 {
+.app h1 {
   font-size: 2.5em;
-  margin-bottom: 1rem;
-  color: #4CAF50;
+  margin-bottom: 2rem;
+  color: #2c3e50;
 }
 
 .game-container {
@@ -23,4 +23,19 @@ h1 {
   background-color: #1a1a1a;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 1rem;
+  }
+  
+  .game-controls {
+    flex-wrap: wrap;
+  }
+  
+  .grid-size-controls {
+    flex-direction: column;
+    align-items: center;
+  }
 }

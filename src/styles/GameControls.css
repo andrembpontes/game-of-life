@@ -1,25 +1,29 @@
 .game-controls {
-  margin: 20px 0;
   display: flex;
-  gap: 10px;
+  gap: 1rem;
+  margin: 1rem 0;
   justify-content: center;
 }
 
 .game-controls button {
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   font-size: 1rem;
-  cursor: pointer;
-  background-color: #4CAF50;
-  color: white;
   border: none;
   border-radius: 4px;
-  transition: background-color 0.2s ease;
+  background-color: #4a90e2;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .game-controls button:hover {
-  background-color: #45a049;
+  background-color: #357abd;
 }
 
-.game-controls button:active {
-  background-color: #3d8b40;
+.game-controls button.muted {
+  background-color: #e74c3c;
+}
+
+.game-controls button.muted:hover {
+  background-color: #c0392b;
 }
