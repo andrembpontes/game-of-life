@@ -14,6 +14,7 @@ function App() {
   const [grid, setGrid] = useState(() => generateRandomGrid(rows, cols));
   const [isRunning, setIsRunning] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const lastUpdateTime = useRef(performance.now());
   const frameTimeRef = useRef(null);
 
@@ -67,6 +68,10 @@ function App() {
     setIsRunning(prev => !prev);
   }, []);
 
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+
   const resetGrid = useCallback(() => {
     const newGrid = generateRandomGrid(rows, cols);
     setGrid(newGrid);
@@ -105,14 +110,31 @@ function App() {
     return () => clearInterval(intervalId);
   }, [isRunning, nextGeneration]);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'f') {
+        toggleFullscreen();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        toggleRunning();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [toggleFullscreen, toggleRunning]);
+
   const controlProps = useMemo(() => ({
     isRunning,
     isMuted,
+    isFullscreen,
     onToggleRunning: toggleRunning,
     onReset: resetGrid,
     onClear: clearGrid,
-    onToggleMute: toggleMute
-  }), [isRunning, isMuted, toggleRunning, resetGrid, clearGrid, toggleMute]);
+    onToggleMute: toggleMute,
+    onToggleFullscreen: toggleFullscreen
+  }), [isRunning, isMuted, isFullscreen, toggleRunning, resetGrid, clearGrid, toggleMute, toggleFullscreen]);
 
   const gridSizeProps = useMemo(() => ({
     rows,
@@ -124,12 +146,13 @@ function App() {
     <div className="app">
       <FPSCounter />
       <h1>Game of Life</h1>
-      <div className="game-container">
-        <GridSizeControls {...gridSizeProps} />
-        <GameControls {...controlProps} />
+      <div className={`game-container ${isFullscreen ? 'fullscreen' : ''}`}>
+        {!isFullscreen && <GridSizeControls {...gridSizeProps} />}
+        {!isFullscreen && <GameControls {...controlProps} />}
         <GameGridCanvas
           grid={grid}
           onToggleCell={toggleCell}
+          isFullscreen={isFullscreen}
         />
       </div>
     </div>

@@ -7,8 +7,8 @@ const GridSizeControls = ({ rows, cols, onSizeChange }) => {
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    const newRows = Math.min(100, Math.max(3, parseInt(rowsInput, 10) || 3));
-    const newCols = Math.min(100, Math.max(3, parseInt(colsInput, 10) || 3));
+    const newRows = Math.max(3, parseInt(rowsInput, 10) || 3);
+    const newCols = Math.max(3, parseInt(colsInput, 10) || 3);
     onSizeChange(newRows, newCols);
   }, [rowsInput, colsInput, onSizeChange]);
 
@@ -27,7 +27,6 @@ const GridSizeControls = ({ rows, cols, onSizeChange }) => {
           type="number"
           id="rows"
           min="3"
-          max="100"
           value={rowsInput}
           onChange={(e) => setRowsInput(e.target.value)}
           onBlur={handleSubmit}
@@ -40,7 +39,6 @@ const GridSizeControls = ({ rows, cols, onSizeChange }) => {
           type="number"
           id="cols"
           min="3"
-          max="100"
           value={colsInput}
           onChange={(e) => setColsInput(e.target.value)}
           onBlur={handleSubmit}
