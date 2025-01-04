@@ -38,6 +38,14 @@ function App() {
     setGrid(generateRandomGrid(30, 30));
   };
 
+  const handleCellToggle = useCallback((row, col) => {
+    setGrid(prevGrid => {
+      const newGrid = prevGrid.map(arr => [...arr]);
+      newGrid[row][col] = !newGrid[row][col];
+      return newGrid;
+    });
+  }, []);
+
   return (
     <div className="app">
       <h1>Conway's Game of Life</h1>
@@ -49,7 +57,10 @@ function App() {
           onClear={handleClear}
           onRandom={handleRandom}
         />
-        <GameGrid grid={grid} setGrid={setGrid} />
+        <GameGrid 
+          grid={grid} 
+          onCellToggle={handleCellToggle}
+        />
       </div>
     </div>
   )

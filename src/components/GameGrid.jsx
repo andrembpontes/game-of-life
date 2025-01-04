@@ -1,15 +1,6 @@
-import { useCallback } from 'react';
 import '../styles/GameGrid.css';
 
-const GameGrid = ({ grid, setGrid, rows = 30, cols = 30 }) => {
-  const toggleCell = useCallback((row, col) => {
-    setGrid(prevGrid => {
-      const newGrid = prevGrid.map(arr => [...arr]);
-      newGrid[row][col] = !newGrid[row][col];
-      return newGrid;
-    });
-  }, [setGrid]);
-
+const GameGrid = ({ grid, onCellToggle }) => {
   return (
     <div className="game-grid">
       {grid.map((row, rowIndex) => (
@@ -18,7 +9,7 @@ const GameGrid = ({ grid, setGrid, rows = 30, cols = 30 }) => {
             <div
               key={`${rowIndex}-${colIndex}`}
               className={`grid-cell ${cell ? 'alive' : ''}`}
-              onClick={() => toggleCell(rowIndex, colIndex)}
+              onClick={() => onCellToggle(rowIndex, colIndex)}
             />
           ))}
         </div>
