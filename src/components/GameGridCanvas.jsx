@@ -8,7 +8,7 @@ const MAX_ZOOM = 10;
 const PAN_STEP = 50;
 const ZOOM_STEP = 1.2;
 
-const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
+const GameGridCanvas = ({ grid, rows, cols, onToggleCell, isFullscreen }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const frameCountRef = useRef(0);
@@ -21,8 +21,8 @@ const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-  const width = grid[0].length * CELL_SIZE;
-  const height = grid.length * CELL_SIZE;
+  const width = cols * CELL_SIZE;
+  const height = rows * CELL_SIZE;
 
   // Initialize camera to center the grid
   useEffect(() => {
@@ -46,10 +46,10 @@ const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
     return {
       left: Math.max(0, visibleLeft),
       top: Math.max(0, visibleTop),
-      right: Math.min(grid[0].length, visibleRight),
-      bottom: Math.min(grid.length, visibleBottom)
+      right: Math.min(cols, visibleRight),
+      bottom: Math.min(rows, visibleBottom)
     };
-  }, [camera, grid]);
+  }, [camera, rows, cols]);
 
   // Draw the grid
   const drawGrid = useCallback((ctx, canvasWidth, canvasHeight) => {
@@ -78,12 +78,12 @@ const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
     );
 
     // Draw only visible cells
+    ctx.fillStyle = '#4CAF50';
     for (let row = visible.top; row < visible.bottom; row++) {
       for (let col = visible.left; col < visible.right; col++) {
-        if (grid[row][col]) {
+        if (grid[row * cols + col]) {
           const x = col * CELL_SIZE;
           const y = row * CELL_SIZE;
-          ctx.fillStyle = '#4CAF50';
           ctx.fillRect(
             x + CELL_PADDING,
             y + CELL_PADDING,
@@ -137,7 +137,7 @@ const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
         `Visible area: ${visible.right - visible.left}x${visible.bottom - visible.top}`
       );
     }
-  }, [camera, grid, getVisibleArea]);
+  }, [camera, grid, getVisibleArea, cols]);
 
   // Reset view to center
   const resetView = useCallback(() => {
@@ -275,10 +275,10 @@ const GameGridCanvas = ({ grid, onToggleCell, isFullscreen }) => {
     const col = Math.floor(worldX / CELL_SIZE);
     const row = Math.floor(worldY / CELL_SIZE);
 
-    if (row >= 0 && row < grid.length && col >= 0 && col < grid[0].length) {
+    if (row >= 0 && row < rows && col >= 0 && col < cols) {
       onToggleCell(row, col);
     }
-  }, [camera, grid, onToggleCell]);
+  }, [camera, rows, cols, onToggleCell]);
 
   return (
     <div 
