@@ -1,33 +1,31 @@
-import { memo } from 'react';
-import '../styles/GameGrid.css';
+import React from 'react';
+import PropTypes from 'prop-types';
+import './GameGrid.css';
 
-const Cell = memo(({ isAlive, onClick }) => (
-  <div
-    className={`cell ${isAlive ? 'alive' : ''}`}
-    onClick={onClick}
-  />
-));
-
-const GameGrid = memo(({ grid, onToggleCell }) => {
+const GameGrid = ({ grid, onCellToggle }) => {
   return (
-    <div 
-      className="game-grid"
-      style={{
-        gridTemplateColumns: `repeat(${grid[0].length}, 20px)`,
-        width: `${grid[0].length * 20}px`
-      }}
-    >
-      {grid.map((row, i) =>
-        row.map((cell, j) => (
-          <Cell
-            key={`${i}-${j}`}
-            isAlive={cell}
-            onClick={() => onToggleCell(i, j)}
-          />
-        ))
-      )}
+    <div className="game-grid">
+      {grid.map((row, rowIndex) => (
+        <div key={rowIndex} className="grid-row">
+          {row.map((cell, colIndex) => (
+            <div
+              key={`${rowIndex}-${colIndex}`}
+              data-testid="grid-cell"
+              className={`grid-cell ${cell ? 'alive' : ''}`}
+              onClick={() => onCellToggle(rowIndex, colIndex)}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
-});
+};
+
+GameGrid.propTypes = {
+  grid: PropTypes.arrayOf(
+    PropTypes.arrayOf(PropTypes.bool)
+  ).isRequired,
+  onCellToggle: PropTypes.func.isRequired,
+};
 
 export default GameGrid;

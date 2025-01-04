@@ -4,179 +4,169 @@ import '../styles/GameGridCanvas.css';
 const CELL_SIZE = 20;
 const CELL_PADDING = 1;
 const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 10;
+const MAX_ZOOM = 5;
 const PAN_STEP = 50;
 const ZOOM_STEP = 1.2;
 
-const GameGridCanvas = ({ grid, rows, cols, onToggleCell, isFullscreen }) => {
+const GameGridCanvas = ({ 
+  grid, 
+  rows = 30, 
+  cols = 30, 
+  onToggleCell, 
+  isFullscreen, 
+  showLegend 
+}) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const frameCountRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
   const [fps, setFPS] = useState(0);
-  const [camera, setCamera] = useState({ 
-    x: 0, 
-    y: 0, 
-    zoom: 1 
+  
+  // Initialize camera to center of grid
+  const [camera, setCamera] = useState(() => {
+    const gridWidth = cols * CELL_SIZE;
+    const gridHeight = rows * CELL_SIZE;
+    return { 
+      x: -(gridWidth / 2),  // Move grid left by half its width
+      y: -(gridHeight / 2), // Move grid up by half its height
+      zoom: 1.0  // Start at 100% zoom
+    };
   });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-  const width = cols * CELL_SIZE;
-  const height = rows * CELL_SIZE;
 
-  // Initialize camera to center the grid
-  useEffect(() => {
+  // Reset view to center and fit grid
+  const resetView = useCallback(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      setCamera(prev => ({
-        ...prev,
-        x: -width / 2,
-        y: -height / 2
-      }));
-    }
-  }, [width, height]);
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const gridWidth = cols * CELL_SIZE;
+    const gridHeight = rows * CELL_SIZE;
+    
+    // Calculate zoom to fit grid in viewport
+    const fitZoom = Math.min(
+      width / gridWidth,
+      height / gridHeight
+    );
+    
+    setCamera({
+      x: -(gridWidth / 2),
+      y: -(gridHeight / 2),
+      zoom: fitZoom
+    });
+  }, [rows, cols]);
 
   // Calculate visible area in grid coordinates
   const getVisibleArea = useCallback((canvasWidth, canvasHeight) => {
-    const visibleLeft = Math.floor((-canvasWidth / 2 / camera.zoom - camera.x) / CELL_SIZE);
-    const visibleTop = Math.floor((-canvasHeight / 2 / camera.zoom - camera.y) / CELL_SIZE);
-    const visibleRight = Math.ceil((canvasWidth / 2 / camera.zoom - camera.x) / CELL_SIZE);
-    const visibleBottom = Math.ceil((canvasHeight / 2 / camera.zoom - camera.y) / CELL_SIZE);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
+    const rect = canvas.getBoundingClientRect();
+    const viewWidth = rect.width / camera.zoom;
+    const viewHeight = rect.height / camera.zoom;
+    
     return {
-      left: Math.max(0, visibleLeft),
-      top: Math.max(0, visibleTop),
-      right: Math.min(cols, visibleRight),
-      bottom: Math.min(rows, visibleBottom)
+      left: Math.floor(-camera.x / CELL_SIZE),
+      top: Math.floor(-camera.y / CELL_SIZE),
+      right: Math.ceil((-camera.x + viewWidth) / CELL_SIZE),
+      bottom: Math.ceil((-camera.y + viewHeight) / CELL_SIZE)
     };
-  }, [camera, rows, cols]);
+  }, [camera]);
 
   // Draw the grid
   const drawGrid = useCallback((ctx, canvasWidth, canvasHeight) => {
-    const startTime = performance.now();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Clear canvas with background color
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    // Clear canvas
     ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-    // Save context state and apply camera transform
+    ctx.fillRect(0, 0, width, height);
+    
+    // Center and scale
     ctx.save();
-    ctx.translate(canvasWidth / 2, canvasHeight / 2);
+    ctx.translate(width / 2, height / 2);
+    ctx.translate(camera.x * camera.zoom, camera.y * camera.zoom);
     ctx.scale(camera.zoom, camera.zoom);
-    ctx.translate(camera.x, camera.y);
-
-    // Get visible area
-    const visible = getVisibleArea(canvasWidth, canvasHeight);
-
-    // Draw visible grid background
+    
+    // Draw grid background
+    const gridWidth = cols * CELL_SIZE;
+    const gridHeight = rows * CELL_SIZE;
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(
-      visible.left * CELL_SIZE,
-      visible.top * CELL_SIZE,
-      (visible.right - visible.left) * CELL_SIZE,
-      (visible.bottom - visible.top) * CELL_SIZE
-    );
-
-    // Draw only visible cells
+    ctx.fillRect(0, 0, gridWidth, gridHeight);
+    
+    // Draw cells
     ctx.fillStyle = '#4CAF50';
-    for (let row = visible.top; row < visible.bottom; row++) {
-      for (let col = visible.left; col < visible.right; col++) {
+    let activeCount = 0;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         if (grid[row * cols + col]) {
-          const x = col * CELL_SIZE;
-          const y = row * CELL_SIZE;
+          activeCount++;
           ctx.fillRect(
-            x + CELL_PADDING,
-            y + CELL_PADDING,
+            col * CELL_SIZE + CELL_PADDING,
+            row * CELL_SIZE + CELL_PADDING,
             CELL_SIZE - CELL_PADDING * 2,
             CELL_SIZE - CELL_PADDING * 2
           );
         }
       }
     }
-
-    // Draw grid lines only when zoomed in enough
-    if (camera.zoom > 0.5) {
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = 1 / camera.zoom;
-
-      // Draw vertical grid lines
-      for (let x = visible.left * CELL_SIZE; x <= visible.right * CELL_SIZE; x += CELL_SIZE) {
-        ctx.beginPath();
-        ctx.moveTo(x, visible.top * CELL_SIZE);
-        ctx.lineTo(x, visible.bottom * CELL_SIZE);
-        ctx.stroke();
-      }
-
-      // Draw horizontal grid lines
-      for (let y = visible.top * CELL_SIZE; y <= visible.bottom * CELL_SIZE; y += CELL_SIZE) {
-        ctx.beginPath();
-        ctx.moveTo(visible.left * CELL_SIZE, y);
-        ctx.lineTo(visible.right * CELL_SIZE, y);
-        ctx.stroke();
-      }
-    }
-
-    ctx.restore();
-
-    // Update FPS counter
-    frameCountRef.current++;
-    const currentTime = performance.now();
-    const elapsed = currentTime - lastTimeRef.current;
     
-    if (elapsed >= 1000) {
-      setFPS(Math.round((frameCountRef.current * 1000) / elapsed));
-      frameCountRef.current = 0;
-      lastTimeRef.current = currentTime;
+    // Draw grid lines
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1 / camera.zoom;
+    
+    for (let i = 0; i <= cols; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE, 0);
+      ctx.lineTo(i * CELL_SIZE, gridHeight);
+      ctx.stroke();
     }
-
-    // Log rendering stats in development
-    if (process.env.NODE_ENV === 'development') {
-      const renderTime = performance.now() - startTime;
-      console.debug(
-        `Rendered ${(visible.right - visible.left) * (visible.bottom - visible.top)} cells in ${renderTime.toFixed(2)}ms`,
-        `Visible area: ${visible.right - visible.left}x${visible.bottom - visible.top}`
-      );
+    
+    for (let i = 0; i <= rows; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE);
+      ctx.lineTo(gridWidth, i * CELL_SIZE);
+      ctx.stroke();
     }
-  }, [camera, grid, getVisibleArea, cols]);
-
-  // Reset view to center
-  const resetView = useCallback(() => {
-    setCamera({
-      x: -width / 2,
-      y: -height / 2,
-      zoom: 1
-    });
-  }, [width, height]);
+    
+    ctx.restore();
+  }, [camera.zoom, camera.x, camera.y, grid, cols, rows]);
 
   // Initialize canvas and handle resizing
   useEffect(() => {
-    const canvas = canvasRef.current;
     const container = containerRef.current;
-    const ctx = canvas.getContext('2d');
-    
+    if (!container) return;
+
     const updateCanvasSize = () => {
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
       
-      canvas.width = containerWidth;
-      canvas.height = containerHeight;
-      
-      // Enable crisp pixels
-      ctx.imageSmoothingEnabled = false;
-      
-      // Draw grid
-      drawGrid(ctx, containerWidth, containerHeight);
+      resetView();
     };
 
-    // Initial size update
+    // Initial size
     updateCanvasSize();
 
     // Handle window resize
     const resizeObserver = new ResizeObserver(updateCanvasSize);
     resizeObserver.observe(container);
 
-    return () => resizeObserver.disconnect();
-  }, [drawGrid]);
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [resetView]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -248,37 +238,96 @@ const GameGridCanvas = ({ grid, rows, cols, onToggleCell, isFullscreen }) => {
     }
   }, [isDragging, lastMousePos, camera.zoom]);
 
-  const handleWheel = useCallback((event) => {
-    event.preventDefault();
-    const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, camera.zoom * zoomFactor));
-    
-    setCamera(prev => ({
-      ...prev,
-      zoom: newZoom
-    }));
-  }, [camera.zoom]);
+  // Add wheel event listener with non-passive option
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const delta = -e.deltaY;
+      const zoomFactor = delta > 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+      setCamera(prev => ({
+        ...prev,
+        zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev.zoom * zoomFactor))
+      }));
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, []);
 
   const handleClick = useCallback((event) => {
     if (event.button !== 0) return; // Only handle left click
-
+    
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+    
+    // Get click position relative to canvas center
+    const canvasX = event.clientX - rect.left - width / 2;
+    const canvasY = event.clientY - rect.top - height / 2;
+    
+    // Convert to grid coordinates
+    const gridX = (canvasX / camera.zoom) - camera.x;
+    const gridY = (canvasY / camera.zoom) - camera.y;
+    
+    const col = Math.floor(gridX / CELL_SIZE);
+    const row = Math.floor(gridY / CELL_SIZE);
+    
+    // Ensure coordinates are within bounds
+    if(col < 0 || col >= cols || row < 0 || row >= rows) 
+      return;
+    
+    onToggleCell(row, col);
+  }, [camera.zoom, camera.x, camera.y, cols, rows, onToggleCell]);
 
-    // Convert screen coordinates to world coordinates
-    const worldX = (x - canvas.width / 2) / camera.zoom - camera.x;
-    const worldY = (y - canvas.height / 2) / camera.zoom - camera.y;
+  // Add render effect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Convert world coordinates to grid coordinates
-    const col = Math.floor(worldX / CELL_SIZE);
-    const row = Math.floor(worldY / CELL_SIZE);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    if (row >= 0 && row < rows && col >= 0 && col < cols) {
-      onToggleCell(row, col);
+    // Draw once immediately
+    const rect = canvas.getBoundingClientRect();
+    drawGrid(ctx, rect.width, rect.height);
+
+    // Only set up animation loop if not in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      const render = () => {
+        const rect = canvas.getBoundingClientRect();
+        drawGrid(ctx, rect.width, rect.height);
+        requestAnimationFrame(render);
+      };
+      render();
     }
-  }, [camera, rows, cols, onToggleCell]);
+  }, [drawGrid]);
+
+  // Update FPS counter
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    
+    const updateFPS = () => {
+      frameCount++;
+      const currentTime = performance.now();
+      const elapsed = currentTime - lastTime;
+      
+      if (elapsed >= 1000) {
+        setFPS(Math.round((frameCount * 1000) / elapsed));
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+      
+      requestAnimationFrame(updateFPS);
+    };
+    
+    const animationId = requestAnimationFrame(updateFPS);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
 
   return (
     <div 
@@ -293,21 +342,22 @@ const GameGridCanvas = ({ grid, rows, cols, onToggleCell, isFullscreen }) => {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerMove={handlePointerMove}
-        onWheel={handleWheel}
       />
-      <div className="controls-overlay">
-        <div className="performance-stats">
-          <div>FPS: {fps}</div>
-          <div>Zoom: {Math.round(camera.zoom * 100)}%</div>
+      {showLegend && (
+        <div className="controls-overlay">
+          <div className="performance-stats">
+            <div>FPS: {fps}</div>
+            <div>Zoom: {Math.round(camera.zoom * 100)}%</div>
+          </div>
+          <div className="controls-help">
+            <div>Navigation:</div>
+            <div>HJKL / Arrows / WASD - Pan</div>
+            <div>I/O or +/- - Zoom in/out</div>
+            <div>R - Reset view</div>
+            <div>Mouse: Wheel to zoom, Right-click to pan</div>
+          </div>
         </div>
-        <div className="controls-help">
-          <div>Navigation:</div>
-          <div>HJKL / Arrows / WASD - Pan</div>
-          <div>I/O or +/- - Zoom in/out</div>
-          <div>R - Reset view</div>
-          <div>Mouse: Wheel to zoom, Right-click to pan</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

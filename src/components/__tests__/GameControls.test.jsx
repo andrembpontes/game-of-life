@@ -1,57 +1,87 @@
+import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import GameControls from '../GameControls';
 
 describe('GameControls', () => {
   const mockHandlers = {
-    onStart: jest.fn(),
-    onStop: jest.fn(),
+    onToggleRunning: jest.fn(),
+    onReset: jest.fn(),
     onClear: jest.fn(),
-    onRandom: jest.fn(),
+    onToggleMute: jest.fn(),
+    onToggleFullscreen: jest.fn(),
+    onToggleLegend: jest.fn(),
+  };
+
+  const defaultProps = {
+    isRunning: false,
+    isMuted: false,
+    isFullscreen: false,
+    showLegend: true,
+    ...mockHandlers
   };
 
   beforeEach(() => {
-    Object.values(mockHandlers).forEach(handler => handler.mockClear());
+    jest.clearAllMocks();
   });
 
   test('renders Start button when not running', () => {
     const { getByText } = render(
-      <GameControls isRunning={false} {...mockHandlers} />
+      <GameControls {...defaultProps} />
     );
     
-    expect(getByText('Start')).toBeInTheDocument();
+    const startButton = getByText(/Start/);
+    expect(startButton).toBeInTheDocument();
   });
 
-  test('renders Stop button when running', () => {
+  test('renders Pause button when running', () => {
     const { getByText } = render(
-      <GameControls isRunning={true} {...mockHandlers} />
+      <GameControls {...defaultProps} isRunning={true} />
     );
     
-    expect(getByText('Stop')).toBeInTheDocument();
+    const pauseButton = getByText(/Pause/);
+    expect(pauseButton).toBeInTheDocument();
   });
 
   test('calls correct handlers when buttons are clicked', () => {
     const { getByText } = render(
-      <GameControls isRunning={false} {...mockHandlers} />
+      <GameControls {...defaultProps} />
     );
     
-    fireEvent.click(getByText('Start'));
-    expect(mockHandlers.onStart).toHaveBeenCalled();
+    const startButton = getByText(/Start/);
+    fireEvent.click(startButton);
+    expect(mockHandlers.onToggleRunning).toHaveBeenCalled();
 
-    fireEvent.click(getByText('Clear'));
+    const clearButton = getByText(/Clear/);
+    fireEvent.click(clearButton);
     expect(mockHandlers.onClear).toHaveBeenCalled();
 
-    fireEvent.click(getByText('Random'));
-    expect(mockHandlers.onRandom).toHaveBeenCalled();
+    const resetButton = getByText(/Reset/);
+    fireEvent.click(resetButton);
+    expect(mockHandlers.onReset).toHaveBeenCalled();
+
+    const muteButton = getByText(/Mute/);
+    fireEvent.click(muteButton);
+    expect(mockHandlers.onToggleMute).toHaveBeenCalled();
+
+    const fullscreenButton = getByText(/Fullscreen/);
+    fireEvent.click(fullscreenButton);
+    expect(mockHandlers.onToggleFullscreen).toHaveBeenCalled();
+
+    const overlayButton = getByText(/Hide Overlay/);
+    fireEvent.click(overlayButton);
+    expect(mockHandlers.onToggleLegend).toHaveBeenCalled();
   });
 
-  test('switches between Start and Stop buttons', () => {
+  test('switches between Start and Pause buttons', () => {
     const { getByText, rerender } = render(
-      <GameControls isRunning={false} {...mockHandlers} />
+      <GameControls {...defaultProps} />
     );
     
-    expect(getByText('Start')).toBeInTheDocument();
+    const startButton = getByText(/Start/);
+    expect(startButton).toBeInTheDocument();
     
-    rerender(<GameControls isRunning={true} {...mockHandlers} />);
-    expect(getByText('Stop')).toBeInTheDocument();
+    rerender(<GameControls {...defaultProps} isRunning={true} />);
+    const pauseButton = getByText(/Pause/);
+    expect(pauseButton).toBeInTheDocument();
   });
 });

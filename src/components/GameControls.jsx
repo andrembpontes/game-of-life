@@ -5,11 +5,13 @@ const GameControls = memo(({
   isRunning, 
   isMuted, 
   isFullscreen,
+  showLegend,
   onToggleRunning, 
   onReset, 
   onClear, 
   onToggleMute,
-  onToggleFullscreen 
+  onToggleFullscreen,
+  onToggleLegend
 }) => {
   return (
     <div className="game-controls">
@@ -23,6 +25,9 @@ const GameControls = memo(({
       </button>
       <button onClick={onToggleFullscreen}>
         {isFullscreen ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'}
+      </button>
+      <button onClick={onToggleLegend}>
+        {showLegend ? 'Hide Overlay (M)' : 'Show Overlay (M)'}
       </button>
     </div>
   );
