@@ -1,0 +1,31 @@
+.game-grid {
+  display: inline-block;
+  border: 2px solid #666;
+  background-color: #333;
+  padding: 2px;
+}
+
+.grid-row {
+  display: flex;
+}
+
+.grid-cell {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #444;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.grid-cell:hover {
+  background-color: #2a2a2a;
+}
+
+.grid-cell.alive {
+  background-color: #4CAF50;
+}
+
+.grid-cell.alive:hover {
+  background-color: #45a049;
+}
