@@ -19,6 +19,7 @@ const GameGridCanvas = ({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [fps, setFPS] = useState(0);
+  const prevCameraRef = useRef({ x: 0, y: 0, zoom: 1, grid: null });
   
   // Initialize camera to center of grid
   const [camera, setCamera] = useState(() => {
@@ -84,6 +85,8 @@ const GameGridCanvas = ({
     const width = rect.width;
     const height = rect.height;
 
+    const start = performance.now();
+
     // Clear canvas
     ctx.fillStyle = '#333';
     ctx.fillRect(0, 0, width, height);
@@ -103,17 +106,17 @@ const GameGridCanvas = ({
     // Draw cells
     ctx.fillStyle = '#4CAF50';
     let activeCount = 0;
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        if (grid[row * cols + col]) {
-          activeCount++;
-          ctx.fillRect(
-            col * CELL_SIZE + CELL_PADDING,
-            row * CELL_SIZE + CELL_PADDING,
-            CELL_SIZE - CELL_PADDING * 2,
-            CELL_SIZE - CELL_PADDING * 2
-          );
-        }
+    for (let i = 0; i < grid.length; i++) {
+      if (grid[i]) {
+        activeCount++;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        ctx.fillRect(
+          col * CELL_SIZE + CELL_PADDING,
+          row * CELL_SIZE + CELL_PADDING,
+          CELL_SIZE - CELL_PADDING * 2,
+          CELL_SIZE - CELL_PADDING * 2
+        );
       }
     }
     
@@ -136,6 +139,9 @@ const GameGridCanvas = ({
     }
     
     ctx.restore();
+
+    const elapsed = performance.now() - start;
+    console.log(`Grid draw time: ${elapsed.toFixed(2)}ms`);
   }, [camera.zoom, camera.x, camera.y, grid, cols, rows]);
 
   // Initialize canvas and handle resizing
@@ -297,14 +303,24 @@ const GameGridCanvas = ({
 
     // Only set up animation loop if not in test environment
     if (process.env.NODE_ENV !== 'test') {
+      let animationId;
       const render = () => {
-        const rect = canvas.getBoundingClientRect();
-        drawGrid(ctx, rect.width, rect.height);
-        requestAnimationFrame(render);
+        // Only redraw if camera changed
+        if (camera.zoom !== prevCameraRef.current.zoom ||
+            camera.x !== prevCameraRef.current.x ||
+            camera.y !== prevCameraRef.current.y ||
+            grid !== prevCameraRef.current.grid) {
+          const rect = canvas.getBoundingClientRect();
+          drawGrid(ctx, rect.width, rect.height);
+          prevCameraRef.current = { ...camera, grid };
+        }
+        animationId = requestAnimationFrame(render);
       };
-      render();
+      
+      animationId = requestAnimationFrame(render);
+      return () => cancelAnimationFrame(animationId);
     }
-  }, [drawGrid]);
+  }, [drawGrid, grid]);
 
   // Update FPS counter
   useEffect(() => {

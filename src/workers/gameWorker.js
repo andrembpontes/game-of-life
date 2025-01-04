@@ -37,23 +37,13 @@ class GameOfLife {
   }
 
   setGrid(grid) {
-    // Convert 2D array to Uint8Array
-    for (let i = 0; i < this.rows; i++) {
-      for (let j = 0; j < this.cols; j++) {
-        this.currentBuffer[i * this.cols + j] = grid[i][j] ? 1 : 0;
-      }
-    }
+    // Directly copy the Uint8Array
+    this.currentBuffer.set(grid);
   }
 
   getGrid() {
-    // Convert Uint8Array back to 2D array
-    const grid = Array(this.rows).fill().map(() => Array(this.cols).fill(false));
-    for (let i = 0; i < this.rows; i++) {
-      for (let j = 0; j < this.cols; j++) {
-        grid[i][j] = this.currentBuffer[i * this.cols + j] === 1;
-      }
-    }
-    return grid;
+    // Return the Uint8Array directly
+    return this.currentBuffer;
   }
 
   nextGeneration() {
@@ -72,7 +62,7 @@ class GameOfLife {
     // Swap buffers
     [this.currentBuffer, this.nextBuffer] = [this.nextBuffer, this.currentBuffer];
     
-    return this.getGrid();
+    return this.currentBuffer;
   }
 }
 
@@ -85,7 +75,13 @@ self.onmessage = function(e) {
     self.game.setGrid(grid);
     self.postMessage({ type: 'initialized' });
   } else if (type === 'next') {
+    const start = performance.now();
     const nextGrid = self.game.nextGeneration();
-    self.postMessage({ type: 'next', grid: nextGrid });
+    const elapsed = performance.now() - start;
+    self.postMessage({ 
+      type: 'next', 
+      grid: nextGrid,
+      computeTime: elapsed 
+    });
   }
 };

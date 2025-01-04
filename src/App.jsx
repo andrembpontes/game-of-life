@@ -5,12 +5,13 @@ import GridSizeControls from './components/GridSizeControls';
 import FPSCounter from './components/FPSCounter';
 import { createGameState } from './utils/gameLogic';
 import soundEffects from './utils/soundEffects';
+import { useGameWorker } from './hooks/useGameWorker';
 import './App.css';
 
 function App() {
   const [rows, setRows] = useState(30);
   const [cols, setCols] = useState(30);
-  const gameStateRef = useRef(createGameState(rows, cols));
+  const [grid, setGrid] = useState(() => new Uint8Array(rows * cols));
   const [version, setVersion] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -19,46 +20,49 @@ function App() {
   const lastUpdateTime = useRef(performance.now());
   const frameTimeRef = useRef(null);
 
+  const { initGame, nextGeneration } = useGameWorker(rows, cols, (newGrid) => {
+    setGrid(newGrid);
+    setVersion(v => v + 1);
+  });
+
   // Handle grid updates and sound effects
   const handleGridUpdate = useCallback(() => {
     const now = performance.now();
     frameTimeRef.current = now - lastUpdateTime.current;
     lastUpdateTime.current = now;
 
-    const gameState = gameStateRef.current;
-    const oldGrid = gameState.currentState.grid;
-    gameState.nextGeneration();
-    setVersion(v => v + 1);
+    const oldGrid = grid;
+    nextGeneration();
 
     // Handle sound effects
     if (!isMuted) {
       let births = 0;
       let deaths = 0;
       const sampleSize = Math.min(100, rows * cols);
-      const newGrid = gameState.currentState.grid;
       
       for (let k = 0; k < sampleSize; k++) {
         const i = Math.floor(Math.random() * rows);
         const j = Math.floor(Math.random() * cols);
         const idx = i * cols + j;
-        if (!oldGrid[idx] && newGrid[idx]) births++;
-        if (oldGrid[idx] && !newGrid[idx]) deaths++;
+        if (!oldGrid[idx] && grid[idx]) births++;
+        if (oldGrid[idx] && !grid[idx]) deaths++;
       }
       
       if (births > 0) soundEffects.playBirth();
       if (deaths > 0) soundEffects.playDeath();
     }
-  }, [isMuted, rows, cols]);
+  }, [isMuted, rows, cols, grid, nextGeneration]);
 
   // Handle size changes
   const handleSizeChange = useCallback((newRows, newCols) => {
     setRows(newRows);
     setCols(newCols);
-    const gameState = createGameState(newRows, newCols);
-    gameStateRef.current = gameState;
+    const newGrid = new Uint8Array(newRows * newCols);
+    setGrid(newGrid);
+    initGame(newGrid);
     setVersion(v => v + 1);
     setIsRunning(false);
-  }, []);
+  }, [initGame]);
 
   const toggleMute = useCallback(() => {
     const newMutedState = soundEffects.toggleMute();
@@ -78,32 +82,49 @@ function App() {
   }, []);
 
   const resetGrid = useCallback(() => {
-    gameStateRef.current.randomize();
+    const newGrid = new Uint8Array(rows * cols);
+    for (let i = 0; i < newGrid.length; i++) {
+      newGrid[i] = Math.random() > 0.5 ? 1 : 0;
+    }
+    setGrid(newGrid);
+    initGame(newGrid);
     setVersion(v => v + 1);
     setIsRunning(false);
-  }, []);
+  }, [rows, cols, initGame]);
 
   const clearGrid = useCallback(() => {
-    gameStateRef.current.clear();
+    const newGrid = new Uint8Array(rows * cols);
+    setGrid(newGrid);
+    initGame(newGrid);
     setVersion(v => v + 1);
     setIsRunning(false);
-  }, []);
+  }, [rows, cols, initGame]);
 
   const toggleCell = useCallback((row, col) => {
     if (!isRunning) {
-      console.log('Toggling cell:', row, col);
-      gameStateRef.current.toggleCell(row, col);
+      const newGrid = new Uint8Array(grid);
+      const idx = row * cols + col;
+      newGrid[idx] = newGrid[idx] ? 0 : 1;
+      setGrid(newGrid);
+      initGame(newGrid);
       setVersion(v => v + 1);
     }
-  }, [isRunning]);
+  }, [isRunning, grid, cols, initGame]);
+
+  // Initialize game
+  useEffect(() => {
+    initGame(grid);
+  }, [initGame, grid]);
 
   // Handle game loop with dynamic interval based on frame time
   useEffect(() => {
-    let intervalId;
-    if (isRunning) {
-      const interval = Math.max(16, frameTimeRef.current || 100); // Minimum 60 FPS, default to 100ms
-      intervalId = setInterval(handleGridUpdate, interval);
-    }
+    if (!isRunning) return;
+
+    const update = () => {
+      handleGridUpdate();
+    };
+
+    const intervalId = setInterval(update, 100);
     return () => clearInterval(intervalId);
   }, [isRunning, handleGridUpdate]);
 
@@ -143,8 +164,6 @@ function App() {
     onSizeChange: handleSizeChange
   }), [rows, cols, handleSizeChange]);
 
-  const currentState = gameStateRef.current.currentState;
-
   return (
     <div className="app">
       <FPSCounter />
@@ -153,7 +172,7 @@ function App() {
         {!isFullscreen && <GridSizeControls {...gridSizeProps} />}
         {!isFullscreen && <GameControls {...controlProps} />}
         <GameGridCanvas
-          grid={currentState.grid}
+          grid={grid}
           rows={rows}
           cols={cols}
           onToggleCell={toggleCell}
