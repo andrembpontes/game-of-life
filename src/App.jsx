@@ -120,12 +120,26 @@ function App() {
   useEffect(() => {
     if (!isRunning) return;
 
-    const update = () => {
-      handleGridUpdate();
+    let animationFrameId;
+    let lastUpdateTime = performance.now();
+    const UPDATE_INTERVAL = 100; // 10 updates per second
+
+    const gameLoop = () => {
+      const now = performance.now();
+      const elapsed = now - lastUpdateTime;
+
+      if (elapsed >= UPDATE_INTERVAL) {
+        handleGridUpdate();
+        lastUpdateTime = now;
+      }
+
+      animationFrameId = requestAnimationFrame(gameLoop);
     };
 
-    const intervalId = setInterval(update, 100);
-    return () => clearInterval(intervalId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [isRunning, handleGridUpdate]);
 
   // Handle keyboard shortcuts

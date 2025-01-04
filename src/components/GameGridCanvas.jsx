@@ -141,7 +141,7 @@ const GameGridCanvas = ({
     ctx.restore();
 
     const elapsed = performance.now() - start;
-    console.log(`Grid draw time: ${elapsed.toFixed(2)}ms`);
+    // console.log(`Grid draw time: ${elapsed.toFixed(2)}ms`);
   }, [camera.zoom, camera.x, camera.y, grid, cols, rows]);
 
   // Initialize canvas and handle resizing
@@ -289,7 +289,7 @@ const GameGridCanvas = ({
     onToggleCell(row, col);
   }, [camera.zoom, camera.x, camera.y, cols, rows, onToggleCell]);
 
-  // Add render effect
+  // Draw when grid or camera changes
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -297,30 +297,9 @@ const GameGridCanvas = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw once immediately
     const rect = canvas.getBoundingClientRect();
     drawGrid(ctx, rect.width, rect.height);
-
-    // Only set up animation loop if not in test environment
-    if (process.env.NODE_ENV !== 'test') {
-      let animationId;
-      const render = () => {
-        // Only redraw if camera changed
-        if (camera.zoom !== prevCameraRef.current.zoom ||
-            camera.x !== prevCameraRef.current.x ||
-            camera.y !== prevCameraRef.current.y ||
-            grid !== prevCameraRef.current.grid) {
-          const rect = canvas.getBoundingClientRect();
-          drawGrid(ctx, rect.width, rect.height);
-          prevCameraRef.current = { ...camera, grid };
-        }
-        animationId = requestAnimationFrame(render);
-      };
-      
-      animationId = requestAnimationFrame(render);
-      return () => cancelAnimationFrame(animationId);
-    }
-  }, [drawGrid, grid]);
+  }, [drawGrid, grid, camera]);
 
   // Update FPS counter
   useEffect(() => {

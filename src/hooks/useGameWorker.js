@@ -23,7 +23,7 @@ export function useGameWorker(rows, cols, onGridUpdate) {
       const { type, grid, computeTime } = e.data;
       if (type === 'next' && callbackRef.current) {
         if (computeTime) {
-          console.log(`Generation compute time: ${computeTime.toFixed(2)}ms`);
+          // console.log(`Generation compute time: ${computeTime.toFixed(2)}ms`);
         }
         callbackRef.current(grid);
       }
