@@ -1,7 +1,10 @@
 .grid-size-controls {
   display: flex;
   gap: 1rem;
-  margin: 1rem 0;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
 }
 
 .size-control {
@@ -10,13 +13,30 @@
   gap: 0.5rem;
 }
 
-.size-control input {
-  width: 60px;
-  padding: 0.25rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.size-control label {
+  color: #4CAF50;
+  font-weight: bold;
 }
 
-.size-control label {
-  font-weight: 500;
+.size-control input {
+  width: 60px;
+  padding: 0.5rem;
+  border: 2px solid #4CAF50;
+  border-radius: 4px;
+  background-color: #333;
+  color: #fff;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.size-control input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+}
+
+@media (max-width: 768px) {
+  .grid-size-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }

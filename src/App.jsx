@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import GameGrid from './components/GameGrid';
+import GameGridCanvas from './components/GameGridCanvas';
 import GameControls from './components/GameControls';
 import GridSizeControls from './components/GridSizeControls';
 import FPSCounter from './components/FPSCounter';
@@ -124,12 +124,14 @@ function App() {
     <div className="app">
       <FPSCounter />
       <h1>Game of Life</h1>
-      <GridSizeControls {...gridSizeProps} />
-      <GameControls {...controlProps} />
-      <GameGrid
-        grid={grid}
-        onToggleCell={toggleCell}
-      />
+      <div className="game-container">
+        <GridSizeControls {...gridSizeProps} />
+        <GameControls {...controlProps} />
+        <GameGridCanvas
+          grid={grid}
+          onToggleCell={toggleCell}
+        />
+      </div>
     </div>
   );
 }
