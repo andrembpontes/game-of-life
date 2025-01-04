@@ -1,50 +1,32 @@
 export const calculateNextGeneration = (grid) => {
   const rows = grid.length;
   const cols = grid[0].length;
-  const nextGen = Array(rows).fill().map(() => Array(cols).fill(false));
+  const nextGen = Array(rows).fill().map(() => new Array(cols).fill(false));
+
+  // Pre-calculate neighbor offsets
+  const neighborOffsets = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+  ];
 
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
-      const neighbors = countNeighbors(grid, i, j);
+      let count = 0;
       
-      if (grid[i][j]) { // Live cell
-        nextGen[i][j] = neighbors === 2 || neighbors === 3;
-      } else { // Dead cell
-        nextGen[i][j] = neighbors === 3;
+      // Count neighbors using pre-calculated offsets
+      for (const [di, dj] of neighborOffsets) {
+        const newRow = (i + di + rows) % rows;
+        const newCol = (j + dj + cols) % cols;
+        if (grid[newRow][newCol]) count++;
       }
+      
+      // Apply rules directly without function call overhead
+      nextGen[i][j] = count === 3 || (grid[i][j] && count === 2);
     }
   }
 
   return nextGen;
-};
-
-const countNeighbors = (grid, row, col) => {
-  const rows = grid.length;
-  const cols = grid[0].length;
-  let count = 0;
-
-  // Check all 8 neighbors, including wrapping around edges
-  for (let i = -1; i <= 1; i++) {
-    for (let j = -1; j <= 1; j++) {
-      if (i === 0 && j === 0) continue;
-      
-      // Calculate wrapped coordinates
-      let newRow = row + i;
-      let newCol = col + j;
-      
-      // Handle wrapping
-      if (newRow < 0) newRow = rows - 1;
-      if (newRow >= rows) newRow = 0;
-      if (newCol < 0) newCol = cols - 1;
-      if (newCol >= cols) newCol = 0;
-      
-      if (grid[newRow][newCol]) {
-        count++;
-      }
-    }
-  }
-
-  return count;
 };
 
 export const generateRandomGrid = (rows, cols) => {

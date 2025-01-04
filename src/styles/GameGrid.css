@@ -1,31 +1,44 @@
 .game-grid {
-  display: inline-block;
-  border: 2px solid #666;
+  display: grid;
+  gap: 1px;
   background-color: #333;
-  padding: 2px;
+  padding: 1px;
+  margin: 0 auto;
+  border: 2px solid #666;
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: none;
 }
 
-.grid-row {
-  display: flex;
-}
-
-.grid-cell {
+.cell {
   width: 20px;
   height: 20px;
-  border: 1px solid #444;
   background-color: #1a1a1a;
+  transition: background-color 0.1s ease;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  will-change: background-color;
 }
 
-.grid-cell:hover {
+.cell:hover {
   background-color: #2a2a2a;
 }
 
-.grid-cell.alive {
+.cell.alive {
   background-color: #4CAF50;
 }
 
-.grid-cell.alive:hover {
+.cell.alive:hover {
   background-color: #45a049;
+}
+
+@media (max-width: 768px) {
+  .cell {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .game-grid {
+    gap: 0.5px;
+    padding: 0.5px;
+  }
 }
